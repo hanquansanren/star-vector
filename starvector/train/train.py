@@ -1,4 +1,9 @@
 import os
+os.environ["HF_HOME"] = "../weights/training"
+os.environ["OUTPUT_DIR"] = "./outputs"
+
+
+
 from starvector.util import (
     set_env_vars,
     flatten_dict,
