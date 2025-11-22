@@ -29,9 +29,13 @@ def model_builder(config):
     else:
         starcoder_model_config = AutoConfig.from_pretrained(config.model.starcoder_model_name)
 
+        image_size = getattr(config.data.train.params, "im_size", 224)
+
         starvector_config = StarVectorConfig(
             max_length_train=config.model.max_length,
             image_encoder_type=config.model.image_encoder_type,
+            image_size=image_size,
+            image_patch_size=getattr(config.model, "image_patch_size", 14),
             use_flash_attn=config.model.use_flash_attn,
             adapter_norm=config.model.adapter_norm,
             starcoder_model_name=config.model.starcoder_model_name,
@@ -41,6 +45,7 @@ def model_builder(config):
             vocab_size=starcoder_model_config.vocab_size,
             hidden_size=starcoder_model_config.hidden_size,
             num_kv_heads=getattr(starcoder_model_config, "num_key_value_heads", None),
+            name_or_path=config.model.starcoder_model_name,
         )
         model = StarVectorForCausalLM(starvector_config, **args)
         

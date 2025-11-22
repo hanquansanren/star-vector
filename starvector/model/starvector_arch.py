@@ -102,6 +102,7 @@ class StarVectorConfig(PretrainedConfig):
         image_encoder_type: str = "clip",
         adapter_norm: str = "layer_norm",
         image_size: int = 224,
+        image_patch_size: int = 14,
         max_length: int = 8192,
         max_length_train: int = 8192,
         use_flash_attn: bool = True,
@@ -119,6 +120,7 @@ class StarVectorConfig(PretrainedConfig):
         self.image_encoder_type = image_encoder_type
         self.adapter_norm = adapter_norm
         self.image_size = image_size
+        self.image_patch_size = image_patch_size
         self.max_length = max_length
         self.max_length_train = max_length_train
         self.use_flash_attn = use_flash_attn

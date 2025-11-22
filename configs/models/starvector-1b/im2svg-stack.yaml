@@ -1,14 +1,15 @@
 project:
   project: starvector-1b-im2svg
-  use_wandb: false
-  entity: abc
+  use_wandb: true
+  entity: "1243271316"
   copy_code: false
 model:  
-  max_length: 8192
+  max_length: 4096
   model_name: null # in case of creating a new model, set this to None (null)
-  starcoder_model_name: bigcode/starcoderbase-1b
+  starcoder_model_name: /Data_PHD/phd23_weiguang_zhang/project/weights/models--bigcode--starcoderbase-1b/snapshots/182f0165fdf8da9c9935901eec65c94337f01c11 # starcoder_model_name: bigcode/starcoderbase-1b
   pretrained: true
   image_encoder_type: clip
+  image_patch_size: 14 
   use_flash_attn: true
   adapter_norm: batch_norm
   init_type: glorot
@@ -20,7 +21,7 @@ training:
   save_model_epochs: 1
   checkpointing_steps: 500
   checkpoints_total_limit: 3
-  model_precision: bf16
+  model_precision: fp16
   resume_from_checkpoint: false
   continue_training: false
   n_epochs: 4
@@ -46,6 +47,7 @@ data:
     params:
       split: train
       dataset_name: starvector/svg-stack
+      data_dir: /Data_PHD/phd23_weiguang_zhang/project/svg_data/svg-stack-hf-1-8
       im_size: 224
       num_samples: -1
       transforms: false
@@ -56,12 +58,13 @@ data:
     params:
       split: test
       dataset_name: starvector/svg-stack
+      data_dir: /Data_PHD/phd23_weiguang_zhang/project/svg_data/svg-stack-hf-1-8
       im_size: 224
       num_samples: -1
       transforms: false
       select_dataset_name: false
 generation:
-  max_length: 8192
+  max_length: 4096
   min_length: 10
   num_beams: 3
   temperature: 1.0

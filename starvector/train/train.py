@@ -1,4 +1,15 @@
 import os
+os.environ["HF_HOME"] = "../weights/training"
+os.environ["HF_TOKEN"] = "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"
+os.environ["OUTPUT_DIR"] = "./outputs"
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+os.environ["WANDB_API_KEY"] = "9437b9a23a4e3285a454eb705c4901743a105758"
+# Set wandb directory to avoid permission issues
+# This will be used by both manual wandb.init() and accelerator.init_trackers()
+output_dir_env = os.environ.get("OUTPUT_DIR", "./outputs")
+wandb_dir = os.path.join(output_dir_env, "wandb")
+os.environ["WANDB_DIR"] = wandb_dir
+
 from starvector.util import (
     set_env_vars,
     flatten_dict,
@@ -40,6 +51,13 @@ import torch
 from starvector.train.util import load_checkpoint, is_deepspeed, consolidate_deepspeed_checkpoint
 logger = get_logger(__name__, log_level="INFO")
 
+def _forward_model(model, batch):
+    if hasattr(model, "model"):
+        return model.model(batch)
+    if hasattr(model, "module"):
+        return model.module(batch)
+    return model(batch)
+
 def validate(model, dataloader, accelerator):
     loss_meter = AverageMeter()
     model.eval()
@@ -47,7 +65,7 @@ def validate(model, dataloader, accelerator):
     with torch.no_grad():
         for i, batch in enumerate(dataloader):
             batch_size = len(batch["image"])
-            loss = model(batch)
+            loss = _forward_model(model, batch)
             loss_meter.update(loss.detach().item(), batch_size)
             pbar.update(1)
 
@@ -94,7 +112,30 @@ def main(config=None):
     global_step = 0
     first_epoch = 0
 
+    # Ensure wandb directory exists
+    if config.project.use_wandb:
+        wandb_dir = os.path.join(output_dir, "wandb")
+        os.makedirs(wandb_dir, exist_ok=True)
+
     model = model_builder(config)
+    
+    if config.fsdp.enable:
+        fsdp_plugin = load_fsdp_plugin(config, model)
+    else:
+        fsdp_plugin = None
+
+    # Define accelerator
+    kwargs_handler = None
+    accelerator = Accelerator(
+        gradient_accumulation_steps=config.training.gradient_accumulation_steps,
+        mixed_precision=config.training.model_precision,
+        log_with="wandb" if config.project.use_wandb else None,
+        project_dir=logging_dir,
+        project_config=ProjectConfiguration(logging_dir=logging_dir),
+        step_scheduler_with_optimizer=False,
+        fsdp_plugin=fsdp_plugin,
+        kwargs_handlers=kwargs_handler
+    )
     
     # Instantiate the model, fsdp and accelerator
     if config.training.resume_from_checkpoint:
@@ -116,30 +157,15 @@ def main(config=None):
             first_epoch = 0
             resume_step = 0
             print("Loaded checkpoint but not updating global step")
-    
-    if config.fsdp.enable:
-        fsdp_plugin = load_fsdp_plugin(config, model)
-    else:
-        fsdp_plugin = None
-
-    # Define accelerator
-    kwargs_handler = None
-    accelerator = Accelerator(
-        gradient_accumulation_steps=config.training.gradient_accumulation_steps,
-        mixed_precision=config.training.model_precision,
-        log_with="wandb" if config.project.use_wandb else None,
-        project_dir=logging_dir,
-        project_config=ProjectConfiguration(logging_dir=logging_dir),
-        step_scheduler_with_optimizer=False,
-        fsdp_plugin=fsdp_plugin,
-        kwargs_handlers=kwargs_handler
-    )
 
     # --------------- Logging ---------------
     if accelerator.is_main_process:
         if config.project.use_wandb:
             import wandb
-            wandb.init(name=exp_id, project=config.project.project, entity=config.project.entity, config=log_config)
+            entity = str(config.project.entity) if config.project.entity is not None else None
+            # wandb_dir was already set earlier, just use it
+            wandb_dir = os.path.join(output_dir, "wandb")
+            wandb.init(name=exp_id, project=config.project.project, entity=entity, config=log_config, dir=wandb_dir)
             accelerator.init_trackers(
                 project_name=config.project.project,
             )
@@ -170,9 +196,9 @@ def main(config=None):
         wandb.log({"num_update_steps_per_epoch": num_update_steps_per_epoch})
         wandb.log({"max_train_steps": max_train_steps})
 
-    # accelerate prepare model
-    model = accelerator.prepare(model)
-    
+    # # accelerate prepare model
+    # model = accelerator.prepare(model)
+
     # activation/gradient checkpointing
     if config.training.use_gradient_checkpointing:
         print("apply gradient checkpointing")
@@ -184,16 +210,15 @@ def main(config=None):
         print("Train dataset length: ", len(train_dataset))
         print("Test dataset length: ", len(test_dataset))
 
-    # --------------- Training config ---------------
     lr_scheduler = get_scheduler(
         config.training.lr_scheduler,
         optimizer=optimizer,
         num_warmup_steps=config.training.lr_warmup_steps * config.training.gradient_accumulation_steps,
-        num_training_steps= (len(train_dataloader) * config.training.n_epochs),
+        num_training_steps=(len(train_dataloader) * config.training.n_epochs),
     )
-    
-    optimizer, train_dataloader, test_dataloader, lr_scheduler = accelerator.prepare(
-        optimizer, train_dataloader, test_dataloader, lr_scheduler
+
+    model, optimizer, train_dataloader, test_dataloader, lr_scheduler = accelerator.prepare(
+        model, optimizer, train_dataloader, test_dataloader, lr_scheduler
     )
         
     loss_meter = AverageMeter()
@@ -242,7 +267,7 @@ def main(config=None):
                 continue
             
             with accelerator.accumulate(model):
-                loss = model(batch)
+                loss = _forward_model(model, batch)
                 accelerator.backward(loss)
                 loss_meter.update(loss.detach().item(), batch['image'].shape[0])
                 if accelerator.sync_gradients:

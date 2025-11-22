@@ -2,7 +2,7 @@ from torch.utils.data import Dataset
 from starvector.data.util import ImageTrainProcessor, use_placeholder, rasterize_svg
 from starvector.util import instantiate_from_config
 import numpy as np
-from datasets import load_dataset
+from datasets import load_dataset, load_from_disk
 
 class SVGDatasetBase(Dataset):
     def __init__(self, dataset_name, split, im_size, num_samples=-1, **kwargs):
@@ -26,12 +26,37 @@ class SVGDatasetBase(Dataset):
             std = None
 
         self.processor = ImageTrainProcessor(size=self.im_size, mean=mean, std=std)
-        self.data = load_dataset(dataset_name, split=split)
 
-        print(f"Loaded {len(self.data)} samples from {dataset_name} {split} split")
+        # Allow loading dataset either from HuggingFace Hub (dataset_name)
+        # or from a local path (data_dir / local_path), so that users can
+        # train on custom datasets stored on disk.
+        data_dir = kwargs.get("data_dir", None)
+        local_path = kwargs.get("local_path", None)
+
+        if data_dir is not None:
+            dataset_on_disk = load_from_disk(data_dir)
+            # If it's a DatasetDict, select the requested split
+            if hasattr(dataset_on_disk, "keys"):
+                self.data = dataset_on_disk[split]
+            else:
+                # Single split Dataset already
+                self.data = dataset_on_disk
+            used_name = data_dir
+        elif local_path is not None:
+            dataset_on_disk = load_from_disk(local_path)
+            if hasattr(dataset_on_disk, "keys"):
+                self.data = dataset_on_disk[split]
+            else:
+                self.data = dataset_on_disk
+            used_name = local_path
+        else:
+            self.data = load_dataset(dataset_name, split=split)
+            used_name = dataset_name
+
+        print(f"Loaded {len(self.data)} samples from {used_name} {split} split")
 
     def __len__(self):
-        return len(self.data_json)
+        return len(self.data)
     
     def get_svg_and_image(self, svg_str, sample_id):
         do_augment = np.random.choice([True, False], p=[self.p, 1 - self.p])
@@ -60,7 +85,8 @@ class SVGDatasetBase(Dataset):
             image = rasterize_svg(svg)
 
         # Process the image
-        if 'siglip' in self.image_processor:
+        image_processor_name = getattr(self, "image_processor", None)
+        if isinstance(image_processor_name, str) and "siglip" in image_processor_name:
             image = self.processor(image).pixel_values[0]
         else:
             image = self.processor(image)

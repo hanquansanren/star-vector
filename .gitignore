@@ -179,3 +179,13 @@ cython_debug/
 *internal*
 *test.png*
 assets/reward_assets
+
+
+*.whl
+starvector/models--starvector--starvector-1b-im2svg
+requirements.txt
+assets/test
+outputs/
+assets/*
+.cursor
+.vscode

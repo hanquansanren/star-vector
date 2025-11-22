@@ -47,13 +47,20 @@ class SVGStackDataset(SVGDatasetBase):
         svg_str = self.data[idx]['Svg']
         sample_id = self.data[idx]['Filename']
         svg, image = self.get_svg_and_image(svg_str, sample_id)
-        
-        # Randomly choose between 'caption_blip' and 'caption_llava'
-        caption_column = random.choice(['caption_blip2', 'caption_llava'])
-        caption = random.choice(text2svg_captions) + self.data[idx].get(caption_column, "")
+
+        caption_blip = self.data[idx].get('caption_blip2', '')
+        caption_llava = self.data[idx].get('caption_llava', '')
+        caption_candidates = [caption for caption in [caption_blip, caption_llava] if caption]
+        if caption_candidates:
+            caption_column = random.choice(caption_candidates)
+        else:
+            caption_column = ''
+        caption_prefix = random.choice(text2svg_captions)
+        caption = caption_prefix + caption_column
+
         return {
             'svg': svg,
             'image': image,
             'id': sample_id,
             'caption': caption,
-            }
+        }

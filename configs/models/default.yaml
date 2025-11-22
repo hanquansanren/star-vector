@@ -9,6 +9,7 @@ model:
   starcoder_model_name: bigcode/starcoderbase-1b
   pretrained: true
   image_encoder_type: clip
+  image_patch_size: 14
   use_flash_attn: true
   adapter_norm: layer_norm
   init_type: glorot

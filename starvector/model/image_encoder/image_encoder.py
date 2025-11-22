@@ -14,8 +14,10 @@ class ImageEncoder(nn.Module):
         torch_dtype = kwargs.get('model_precision', config.torch_dtype)
         # torch_dtype = torch.float32
         self.image_encoder_type = config.image_encoder_type
+        patch_size = getattr(config, "image_patch_size", 14)
+
         if self.image_encoder_type == 'clip':
-            self.visual_encoder, self.ln_vision = self.build_clip_encoder(image_size=image_size)
+            self.visual_encoder, self.ln_vision = self.build_clip_encoder(image_size=image_size, patch_size=patch_size)
             convert_weights_to_precision(self, torch_dtype)
             self.processor = ImageTrainProcessor(size=config.image_size)
 
@@ -47,11 +49,11 @@ class ImageEncoder(nn.Module):
                 model_name, torch_dtype = torch_dtype
             )
 
-    def build_clip_encoder(self, image_size):
+    def build_clip_encoder(self, image_size, patch_size):
         from starvector.model.image_encoder.clip_model import VisionTransformer, LayerNorm
         visual_encoder = VisionTransformer(
             input_resolution=image_size,
-            patch_size=14,
+            patch_size=patch_size,
             width=1024,
             layers=23,
             heads=16,

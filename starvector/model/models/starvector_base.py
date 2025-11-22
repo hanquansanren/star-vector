@@ -86,7 +86,12 @@ class StarVectorBase(nn.Module, ABC):
         """Get hidden size and query length based on encoder type"""
         if image_encoder_type == 'clip':
             hidden_size = self.image_encoder.visual_encoder.num_features
-            query_length = 257
+            if hasattr(self.image_encoder.visual_encoder, "positional_embedding"):
+                query_length = self.image_encoder.visual_encoder.positional_embedding.shape[0]
+            elif hasattr(self.image_encoder.visual_encoder, "num_patches"):
+                query_length = self.image_encoder.visual_encoder.num_patches + 1
+            else:
+                query_length = 257
         elif image_encoder_type == 'open-clip':
             hidden_size = self.image_encoder.visual_encoder.transformer.width
             query_length = 256

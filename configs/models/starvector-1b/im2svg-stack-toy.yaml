@@ -1,14 +1,15 @@
 project:
-  project: starvector-1b-im2svg
+  project: starvector-1b-im2svg-toy
   use_wandb: false
   entity: abc
   copy_code: false
 model:  
-  max_length: 8192
+  max_length: 4096 # 8192/2
   model_name: null # in case of creating a new model, set this to None (null)
-  starcoder_model_name: bigcode/starcoderbase-1b
+  starcoder_model_name: /Data_PHD/phd23_weiguang_zhang/project/weights/models--bigcode--starcoderbase-1b/snapshots/182f0165fdf8da9c9935901eec65c94337f01c11
   pretrained: true
   image_encoder_type: clip
+  image_patch_size: 14 
   use_flash_attn: true
   adapter_norm: batch_norm
   init_type: glorot
@@ -18,14 +19,14 @@ model:
   use_cache: false
 training:
   save_model_epochs: 1
-  checkpointing_steps: 500
+  checkpointing_steps: 200
   checkpoints_total_limit: 3
-  model_precision: bf16
+  model_precision: bf16 # fp16
   resume_from_checkpoint: false
   continue_training: false
-  n_epochs: 10
+  n_epochs: 4
   lr: 0.00001
-  gradient_accumulation_steps: 4
+  gradient_accumulation_steps: 2
   lr_scheduler: cosine
   lr_warmup_steps: 10
   adam_beta1: 0.95
@@ -33,35 +34,37 @@ training:
   adam_weight_decay: 1.0e-06
   adam_epsilon: 1e-08
   optimizer: adamw
-  train_image_encoder: true
-  train_LLM: true
+  train_image_encoder: true # true
+  train_LLM: false # true
   use_gradient_checkpointing: false
 fsdp:
   enable: false
 data:
-  num_workers: 16
+  num_workers: 2
   train:
-    batch_size: 4
-    target: starvector.data.iconsvg.SVGIconsDataset
+    batch_size: 1
+    target: starvector.data.stacksvg.SVGStackDataset
     params:
       split: train
-      dataset_name: starvector/svg-icons
+      dataset_name: starvector/svg-stack
+      data_dir: /Data_PHD/phd23_weiguang_zhang/project/svg_data/svg-stack-toy
       im_size: 224
       num_samples: -1
       transforms: false
       select_dataset_name: false
   test:
-    batch_size: 8
-    target: starvector.data.iconsvg.SVGIconsDataset
+    batch_size: 1
+    target: starvector.data.stacksvg.SVGStackDataset
     params:
       split: test
-      dataset_name: starvector/svg-icons
+      dataset_name: starvector/svg-stack
+      data_dir: /Data_PHD/phd23_weiguang_zhang/project/svg_data/svg-stack-toy
       im_size: 224
-      num_samples: 1000
+      num_samples: -1
       transforms: false
       select_dataset_name: false
 generation:
-  max_length: 8192
+  max_length: 4096 # 8192
   min_length: 10
   num_beams: 3
   temperature: 1.0
@@ -85,3 +88,4 @@ metrics:
   ratio_post_processed: false
   ratio_non_compiling: false
   DinoScore: true
+
