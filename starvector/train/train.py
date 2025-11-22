@@ -1,9 +1,17 @@
 import os
 os.environ["HF_HOME"] = "../weights/training"
-os.environ["HF_TOKEN"] = "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"
+# 从环境变量读取敏感信息，如果未设置则使用默认值或跳过
+if "HF_TOKEN" not in os.environ:
+    # 如果需要，可以从配置文件或环境变量中读取
+    # os.environ["HF_TOKEN"] = os.getenv("HF_TOKEN", "")
+    pass
 os.environ["OUTPUT_DIR"] = "./outputs"
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
-os.environ["WANDB_API_KEY"] = "9437b9a23a4e3285a454eb705c4901743a105758"
+# 从环境变量读取 WandB API key，如果未设置则跳过
+if "WANDB_API_KEY" not in os.environ:
+    # 如果需要，可以从配置文件或环境变量中读取
+    # os.environ["WANDB_API_KEY"] = os.getenv("WANDB_API_KEY", "")
+    pass
 # Set wandb directory to avoid permission issues
 # This will be used by both manual wandb.init() and accelerator.init_trackers()
 output_dir_env = os.environ.get("OUTPUT_DIR", "./outputs")
@@ -271,7 +279,7 @@ def main(config=None):
                 accelerator.backward(loss)
                 loss_meter.update(loss.detach().item(), batch['image'].shape[0])
                 if accelerator.sync_gradients:
-                    accelerator.clip_grad_norm_(model.parameters(), 1.0)
+                    accelerator.clip_grad_norm_(model.parameters(), 1.0) # 1.0 改为 0.5，避免梯度爆炸
                 optimizer.step()
                 lr_scheduler.step()
                 optimizer.zero_grad()
