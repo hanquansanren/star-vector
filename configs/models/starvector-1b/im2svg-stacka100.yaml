@@ -21,14 +21,14 @@ training:
   save_model_epochs: 1
   checkpointing_steps: 500
   checkpoints_total_limit: 3
-  model_precision: bp16
+  model_precision: bf16
   resume_from_checkpoint: false
   continue_training: false
   n_epochs: 4
   lr: 0.00001
   gradient_accumulation_steps: 4
   lr_scheduler: cosine
-  lr_warmup_steps: 1400  # 2169710/8*4*0.01
+  lr_warmup_steps: 700  # 2169710/12*4*0.01
   adam_beta1: 0.95
   adam_beta2: 0.999
   adam_weight_decay: 1.0e-06
@@ -40,9 +40,9 @@ training:
 fsdp:
   enable: false
 data:
-  num_workers: 4
+  num_workers: 16
   train:
-    batch_size: 2
+    batch_size: 3
     target: starvector.data.stacksvg.SVGStackDataset
     params:
       split: train
@@ -53,7 +53,7 @@ data:
       transforms: false
       select_dataset_name: false
   test:
-    batch_size: 2
+    batch_size: 3
     target: starvector.data.stacksvg.SVGStackDataset
     params:
       split: test

@@ -83,7 +83,7 @@ def set_env_vars():
     if HF_TOKEN is None:
         raise EnvironmentError("HF_TOKEN environment variable is not defined.")
     time.sleep(1) # wait for the token to be saved
-    login(HF_TOKEN)
+    # login(HF_TOKEN)
 
 def flatten_dict(d, parent_key='', sep='.'):
     items = []
