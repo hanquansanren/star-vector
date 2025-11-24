@@ -188,3 +188,4 @@ outputs/
 assets/*
 .cursor
 .vscode
+*.toml
