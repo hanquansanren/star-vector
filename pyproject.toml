@@ -7,14 +7,14 @@ name = "starvector"
 version = "1.0"
 description = "Generating Scalable Vector Graphics Code from Images and Text"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.10"
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: Apache Software License",
 ]
 dependencies = [
-    "torch==2.5.1", 
-    "torchvision==0.20.1",
+    "torch==2.5.0", 
+    "torchvision==0.20.0",
     "transformers==4.49.0", 
     "tokenizers==0.21.1", 
     "sentencepiece==0.2.0",    
@@ -52,13 +52,12 @@ dependencies = [
     "svglib",
     "Pillow",
     "protobuf",
-    "openai",
-    "flash_attn==2.7.3"
+    "openai"
 
 ]
 
 [project.optional-dependencies]
-train = ["deepspeed", "ninja", "wandb"]
+train = ["deepspeed", "ninja" ,"wandb"]
 
 [project.urls]
 "Homepage" = "https://starvector.github.io"
