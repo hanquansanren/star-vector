@@ -297,7 +297,13 @@ class SVGValidator(ABC):
     
     def validate(self):
         """Main validation loop"""        
-        for i, batch in enumerate(tqdm(self.dataloader, desc="Validating")):
+        dataloader = self.get_dataloader()
+        if dataloader is None:
+            dataloader = getattr(self, "dataloader", None)
+        if dataloader is None:
+            raise RuntimeError("Validator must return a dataloader or set self.dataloader in get_dataloader().")
+
+        for i, batch in enumerate(tqdm(dataloader, desc="Validating")):
             if self.config.generation_params.generation_sweep:
                 results = self.run_temperature_sweep(batch)
             else:

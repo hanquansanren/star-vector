@@ -5,6 +5,7 @@ from transformers import (
     AutoTokenizer,
     utils
     )
+from starvector.train.util import get_module_class_from_name
 
 class StarCoderModel(nn.Module):
     def __init__(self, config, **kwargs):
@@ -36,6 +37,13 @@ class StarCoderModel(nn.Module):
 
         # Prompt the model after image
         self.prompt = '<svg'
+        
+        # Set transformer_layer_cls for gradient checkpointing
+        transformer_layer_cls = kwargs.get('transformer_layer_cls', 'GPTBigCodeBlock')
+        self.transformer_layer_cls = get_module_class_from_name(self, transformer_layer_cls)
+        # If the specified class is not found (e.g., Starcoder2DecoderLayer for v1), use default
+        if self.transformer_layer_cls is None:
+            self.transformer_layer_cls = get_module_class_from_name(self, 'GPTBigCodeBlock')
 
     def init_tokenizer(self, model_name):
         self.tokenizer = AutoTokenizer.from_pretrained(model_name, use_fast=False)

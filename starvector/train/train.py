@@ -6,7 +6,7 @@ if "HF_TOKEN" not in os.environ:
     # os.environ["HF_TOKEN"] = os.getenv("HF_TOKEN", "")
     pass
 os.environ["OUTPUT_DIR"] = "./outputs"
-# os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+os.environ["CUDA_VISIBLE_DEVICES"] = "4"
 # 从环境变量读取 WandB API key，如果未设置则跳过
 if "WANDB_API_KEY" not in os.environ:
     # 如果需要，可以从配置文件或环境变量中读取
@@ -99,7 +99,7 @@ def main(config=None):
 
     if os.path.exists(logging_dir) and not config.training.resume_from_checkpoint:
         config.training.resume_from_checkpoint = get_last_checkpoint(logging_dir)
-        config.training.continue_training = True 
+        config.training.continue_training = True  
             
     # Flatten config dict for logging it
     log_config = flatten_dict(OmegaConf.to_container(config, resolve=True))
@@ -115,7 +115,7 @@ def main(config=None):
     train_dataloader = DataLoader(train_dataset, batch_size=config.data.train.batch_size, shuffle=True, num_workers=config.data.num_workers, pin_memory=True)
     test_dataloader = DataLoader(test_dataset, batch_size=config.data.test.batch_size, shuffle=False, num_workers=config.data.num_workers, pin_memory=True)
     num_update_steps_per_epoch = math.ceil(len(train_dataloader) / config.training.gradient_accumulation_steps)
-    max_train_steps = config.training.n_epochs * num_update_steps_per_epoch
+    # max_train_steps = config.training.n_epochs * num_update_steps_per_epoch
 
     global_step = 0
     first_epoch = 0
@@ -199,10 +199,10 @@ def main(config=None):
     
     total_batch_size = config.data.train.batch_size * accelerator.num_processes * config.training.gradient_accumulation_steps
 
-    if accelerator.is_main_process and config.project.use_wandb:
-        wandb.log({"total_batch_size": total_batch_size})
-        wandb.log({"num_update_steps_per_epoch": num_update_steps_per_epoch})
-        wandb.log({"max_train_steps": max_train_steps})
+    # if accelerator.is_main_process and config.project.use_wandb:
+    #     wandb.log({"total_batch_size": total_batch_size})
+    #     wandb.log({"num_update_steps_per_epoch": num_update_steps_per_epoch})
+    #     wandb.log({"max_train_steps": max_train_steps})
 
     # # accelerate prepare model
     # model = accelerator.prepare(model)
@@ -228,7 +228,15 @@ def main(config=None):
     model, optimizer, train_dataloader, test_dataloader, lr_scheduler = accelerator.prepare(
         model, optimizer, train_dataloader, test_dataloader, lr_scheduler
     )
-        
+    num_update_steps_per_epoch = math.ceil(len(train_dataloader) / config.training.gradient_accumulation_steps)
+    max_train_steps = config.training.n_epochs * num_update_steps_per_epoch
+
+    if accelerator.is_main_process and config.project.use_wandb:
+        wandb.log({"total_batch_size": total_batch_size})
+        wandb.log({"num_update_steps_per_epoch": num_update_steps_per_epoch})
+        wandb.log({"max_train_steps": max_train_steps})
+
+
     loss_meter = AverageMeter()
 
     if accelerator.is_main_process:    

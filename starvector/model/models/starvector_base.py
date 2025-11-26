@@ -43,9 +43,8 @@ class StarVectorBase(nn.Module, ABC):
         self.train_LLM = kwargs.get('train_LLM', False)
         self.train_connector = kwargs.get('train_connector', False)
 
-        # Freeze parameters
+        # Freeze parameters (actual logging happens after checkpoints are loaded)
         self.freze_parameters(self.train_image_encoder, self.train_LLM, self.train_connector)
-        print_trainable_parameters(self)
 
     @abstractmethod
     def _get_svg_transformer(self, config, **kwargs):

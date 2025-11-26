@@ -5,7 +5,7 @@ project:
   copy_code: false
 model:  
   max_length: 4096
-  model_name: null # in case of creating a new model, set this to None (null)
+  model_name: /Data_PHD/phd23_weiguang_zhang/project/weights/models--starvector--starvector-1b-im2svg/snapshots/380ab95d25a8e9ab1dc825debe238b4953ae13b9 # in case of creating a new model, set this to None (null)
   starcoder_model_name: /Data_PHD/phd23_weiguang_zhang/project/weights/models--bigcode--starcoderbase-1b/snapshots/182f0165fdf8da9c9935901eec65c94337f01c11 # starcoder_model_name: bigcode/starcoderbase-1b
   pretrained: true
   image_encoder_type: clip
@@ -15,7 +15,7 @@ model:
   init_type: glorot
   dropout: 0.1
   task: im2svg
-  transformer_layer_cls: null # fsdp specific
+  transformer_layer_cls: GPTBigCodeBlock # fsdp specific (use GPTBigCodeBlock for StarCoder v1, Starcoder2DecoderLayer for StarCoder2)
   use_cache: false
 training:
   save_model_epochs: 1
@@ -28,7 +28,7 @@ training:
   lr: 0.00001
   gradient_accumulation_steps: 4
   lr_scheduler: cosine
-  lr_warmup_steps: 10 # 2169710/8*4*0.01
+  lr_warmup_steps: 100 # 2169710/8*4*0.01
   adam_beta1: 0.95
   adam_beta2: 0.999
   adam_weight_decay: 1.0e-06
@@ -36,18 +36,19 @@ training:
   optimizer: adamw
   train_image_encoder: true
   train_LLM: true
-  use_gradient_checkpointing: false
+  train_connector: true
+  use_gradient_checkpointing: true
 fsdp:
   enable: false
 data:
-  num_workers: 4
+  num_workers: 8
   train:
     batch_size: 2
     target: starvector.data.stacksvg.SVGStackDataset
     params:
       split: train
       dataset_name: starvector/svg-stack
-      data_dir: /Data_PHD/phd23_weiguang_zhang/project/svg_data/svg-stack-hf2
+      data_dir: /Data_PHD/phd23_weiguang_zhang/project/svg_data/svg-stack-hf-1-8_2
       im_size: 224
       num_samples: -1
       transforms: false
@@ -58,7 +59,7 @@ data:
     params:
       split: test
       dataset_name: starvector/svg-stack
-      data_dir: /Data_PHD/phd23_weiguang_zhang/project/svg_data/svg-stack-hf2
+      data_dir: /Data_PHD/phd23_weiguang_zhang/project/svg_data/svg-stack-hf-1-8_2
       im_size: 224
       num_samples: -1
       transforms: false

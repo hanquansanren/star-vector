@@ -1,7 +1,7 @@
 
 from starvector.model.starvector_arch import StarVectorForCausalLM, StarVectorConfig
 from starvector.data.base import ImageTrainProcessor
-from starvector.util import dtype_mapping
+from starvector.util import dtype_mapping, print_trainable_parameters
 from transformers import AutoConfig
 
 def load_pretrained_model(model_path, device="cuda", **kwargs):
@@ -14,19 +14,30 @@ def load_pretrained_model(model_path, device="cuda", **kwargs):
 def model_builder(config):
     model_name = config.model.get("model_name", False)
 
+    train_connector = getattr(config.training, "train_connector", False)
+    model_precision = dtype_mapping[config.training.model_precision]
     args = {
         "task": config.model.task,
         "train_image_encoder": config.training.train_image_encoder,
         "ignore_mismatched_sizes": True,
         "starcoder_model_name": config.model.starcoder_model_name,
         "train_LLM": config.training.train_LLM,
-        "torch_dtype": dtype_mapping[config.training.model_precision],
+        "torch_dtype": model_precision,
+        "model_precision": model_precision,
         "transformer_layer_cls": config.model.get("transformer_layer_cls", False),
         "use_cache": config.model.use_cache,
+        "train_connector": train_connector,
     }
-    if model_name:
+    if model_name: # 需微调基座模型走这里
         model = StarVectorForCausalLM.from_pretrained(model_name, **args)
-    else:
+        # from_pretrained 会丢弃这些自定义参数，因此这里手动重置可训练部分
+        model.model.freze_parameters(
+            config.training.train_image_encoder,
+            config.training.train_LLM,
+            train_connector,
+        )
+        print_trainable_parameters(model.model)
+    else: # 从头预训练starcoder模型走这里
         starcoder_model_config = AutoConfig.from_pretrained(config.model.starcoder_model_name)
 
         image_size = getattr(config.data.train.params, "im_size", 224)

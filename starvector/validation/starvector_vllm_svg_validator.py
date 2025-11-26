@@ -18,7 +18,7 @@ class StarVectorVLLMValidator(SVGValidator):
         
         self.llm = LLM(model=model_name, trust_remote_code=True, dtype=config.model.torch_dtype)
 
-        self.get_dataloader(config)
+        self.dataloader = self.get_dataloader()
 
     def generate_svg(self, batch, generate_config):
 
@@ -54,13 +54,20 @@ class StarVectorVLLMValidator(SVGValidator):
 
         return outputs
 
-    def get_dataloader(self, config):
-        data = load_dataset(config.dataset.dataset_name, config.dataset.config_name, split=config.dataset.split)
+    def get_dataloader(self):
+        data = load_dataset(self.config.dataset.dataset_name, self.config.dataset.config_name, split=self.config.dataset.split)
 
-        if config.dataset.num_samples != -1:
-            data = data.select(range(config.dataset.num_samples))
+        if self.config.dataset.num_samples != -1:
+            data = data.select(range(self.config.dataset.num_samples))
 
-        self.dataloader = DataLoader(data, batch_size=self.config.dataset.batch_size, shuffle=False, num_workers=self.config.dataset.num_workers)
+        dataloader = DataLoader(
+            data,
+            batch_size=self.config.dataset.batch_size,
+            shuffle=False,
+            num_workers=self.config.dataset.num_workers
+        )
+        self.dataloader = dataloader
+        return dataloader
 
     def release_memory(self):
         if self.llm is not None:
