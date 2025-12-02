@@ -3,8 +3,8 @@ from pathlib import Path
 from datasets import load_from_disk
 from starvector.data.util import rasterize_svg
 
-DATA_DIR = Path("/Data_PHD/phd23_weiguang_zhang/project/svg_data/svg-stack-hf")
-SPLIT = "train"   # 也可以改成 "test" / "val"
+DATA_DIR = Path("/Data_PHD/phd23_weiguang_zhang/project/svg_data/svg-stack-hf-1-8")
+SPLIT = "val"   # 也可以改成 "test" / "val"
 INDEX = None      # 指定整数可固定某个样本，None 表示随机挑选
 
 def main():
@@ -19,6 +19,7 @@ def main():
     caption = sample.get("caption_blip2") or sample.get("caption_llava") or ""
 
     print(f"Split: {SPLIT}, Index: {idx}, Filename: {filename}")
+    print(f"svg_str: {svg_str}")
     print(f"Caption: {caption}")
 
     # 将 SVG 树转成 PIL.Image

@@ -379,6 +379,7 @@ class SVGValidator(ABC):
     def generate_and_process_batch(self, batch, generate_config):
         """Generate and post-process SVGs for a batch"""
         generated_outputs = self.generate_svg(batch, generate_config)
+        print(f"generated_outputs: {generated_outputs}")
         processed_results = [self.post_process_svg(output) for output in generated_outputs]
         return processed_results
 

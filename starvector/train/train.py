@@ -6,7 +6,7 @@ if "HF_TOKEN" not in os.environ:
     # os.environ["HF_TOKEN"] = os.getenv("HF_TOKEN", "")
     pass
 os.environ["OUTPUT_DIR"] = "./outputs"
-os.environ["CUDA_VISIBLE_DEVICES"] = "4"
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 # 从环境变量读取 WandB API key，如果未设置则跳过
 if "WANDB_API_KEY" not in os.environ:
     # 如果需要，可以从配置文件或环境变量中读取
