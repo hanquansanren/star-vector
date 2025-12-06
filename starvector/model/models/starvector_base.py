@@ -229,6 +229,33 @@ class StarVectorBase(nn.Module, ABC):
         # Get token IDs for "</svg>"
         end_sequence = self.svg_transformer.tokenizer("</svg>", add_special_tokens=False)['input_ids']
         stopping_criteria = StoppingCriteriaList([StoppingCriteriaSub(stops=[end_sequence])])
+
+        # 原始请求的 max_length（表示“想要的总长度上限”）
+        requested_max_length = base_kwargs.get('max_length', 30)
+
+        # 当前前缀长度（图像 query token + prompt token）
+        inputs_embeds = base_kwargs['inputs_embeds']
+        prefix_len = inputs_embeds.size(1)
+
+        # 模型能够支持的最大 position 长度（GPTBigCode 中是 max_position_embeddings）
+        model_max_len = getattr(self.svg_transformer.transformer.config, "max_position_embeddings", None)
+
+        # 如果拿得到模型的最大长度，就做一次安全截断，避免 position_ids 越界
+        if model_max_len is not None:
+            # 最终总长度不能超过 model_max_len
+            # total_len = prefix_len + 生成 token 数
+            if prefix_len >= model_max_len:
+                # 极端情况下前缀本身就已经>=模型最大长度，直接把 max_length 卡死在 model_max_len
+                max_length = model_max_len
+            else:
+                # 否则保证 prefix_len + max_length <= model_max_len
+                max_allowed_gen = model_max_len - prefix_len
+                # 至少要有 1 个可生成 token，避免出现 0 或负数
+                max_allowed_gen = max(1, max_allowed_gen)
+                max_length = min(requested_max_length, max_allowed_gen)
+        else:
+            max_length = requested_max_length
+
         return {
             'inputs_embeds': base_kwargs['inputs_embeds'],
             'attention_mask': base_kwargs['attention_mask'],
@@ -236,7 +263,7 @@ class StarVectorBase(nn.Module, ABC):
             'top_p': base_kwargs.get('top_p', 0.9),
             'temperature': base_kwargs.get('temperature', 1),
             'num_beams': base_kwargs.get('num_beams', 2),
-            'max_length': base_kwargs.get('max_length', 30),
+            'max_length': max_length,
             'min_length': base_kwargs.get('min_length', 1),
             'repetition_penalty': base_kwargs.get('repetition_penalty', 1.0),
             'length_penalty': base_kwargs.get('length_penalty', 1.0),

@@ -6,6 +6,15 @@ from typing import Dict, List
 from datasets import Dataset, DatasetDict
 
 
+# python /Data_PHD/phd23_weiguang_zhang/project/star-vector/scripts/tools/build_svg_hf_dataset.py \
+#   --mode random_split \
+#   --input_root /Data_PHD/phd23_weiguang_zhang/project/svg_processing/zhuan_output2 \
+#   --output_dir /Data_PHD/phd23_weiguang_zhang/project/svg_data/zhuan2-stack-hf \
+#   --train_ratio 0.98 \
+#   --val_ratio 0.018 \
+#   --test_ratio 0.002 \
+#   --seed 42
+
 def _svg_records_from_paths(svg_files: List[Path], root_for_rel: Path) -> List[Dict[str, str]]:
     """
     从一组 svg 路径中构建 [{Filename, Svg}, ...] 记录。

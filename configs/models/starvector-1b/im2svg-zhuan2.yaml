@@ -25,10 +25,10 @@ training:
   resume_from_checkpoint: false
   continue_training: false
   n_epochs: 4
-  lr: 0.000001
+  lr: 0.00001
   gradient_accumulation_steps: 4
   lr_scheduler: cosine
-  lr_warmup_steps: 100  # 2169710/8*4*0.01
+  lr_warmup_steps: 25  # 2169710/8*4*0.01
   adam_beta1: 0.95
   adam_beta2: 0.999
   adam_weight_decay: 1.0e-06
@@ -48,7 +48,7 @@ data:
     params:
       split: train
       dataset_name: starvector/svg-stack
-      data_dir: /Data_PHD/phd23_weiguang_zhang/project/svg_data/zhuan-stack-hf-1-8
+      data_dir: /Data_PHD/phd23_weiguang_zhang/project/svg_data/zhuan3-stack-hf2
       im_size: 224
       num_samples: -1
       transforms: false
@@ -59,13 +59,13 @@ data:
     params:
       split: test
       dataset_name: starvector/svg-stack
-      data_dir: /Data_PHD/phd23_weiguang_zhang/project/svg_data/zhuan-stack-hf-1-8
+      data_dir: /Data_PHD/phd23_weiguang_zhang/project/svg_data/zhuan3-stack-hf2
       im_size: 224
       num_samples: -1
       transforms: false
       select_dataset_name: false
 generation:
-  max_length: 4096
+  max_length: 8192
   min_length: 10
   num_beams: 3
   temperature: 1.0

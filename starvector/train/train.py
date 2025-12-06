@@ -6,7 +6,7 @@ if "HF_TOKEN" not in os.environ:
     # os.environ["HF_TOKEN"] = os.getenv("HF_TOKEN", "")
     pass
 os.environ["OUTPUT_DIR"] = "./outputs"
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+# os.environ["CUDA_VISIBLE_DEVICES"] = "4"
 # 从环境变量读取 WandB API key，如果未设置则跳过
 if "WANDB_API_KEY" not in os.environ:
     # 如果需要，可以从配置文件或环境变量中读取
@@ -216,18 +216,31 @@ def main(config=None):
 
     if accelerator.is_main_process:
         print("Train dataset length: ", len(train_dataset))
+        print("Train dataloader length: ", len(train_dataloader))
         print("Test dataset length: ", len(test_dataset))
+        print("Test dataloader length: ", len(test_dataloader))
+        print("Num processes: ", accelerator.num_processes)
+
+    # Calculate num_training_steps considering multi-GPU setup
+    # After accelerator.prepare(), each process will have len(train_dataloader) / num_processes batches
+    # So we need to calculate the actual update steps per epoch considering distributed training
+    # Each epoch: ceil(len(train_dataloader) / num_processes / gradient_accumulation_steps) update steps
+    num_update_steps_per_epoch = math.ceil(len(train_dataloader)/ accelerator.num_processes) #config.training.gradient_accumulation_steps)
+    max_train_steps = num_update_steps_per_epoch * config.training.n_epochs
+    print("Max train steps for lr_scheduler: ", max_train_steps)
 
     lr_scheduler = get_scheduler(
         config.training.lr_scheduler,
         optimizer=optimizer,
         num_warmup_steps=config.training.lr_warmup_steps * config.training.gradient_accumulation_steps,
-        num_training_steps=(len(train_dataloader) * config.training.n_epochs),
+        num_training_steps=max_train_steps,
     )
 
     model, optimizer, train_dataloader, test_dataloader, lr_scheduler = accelerator.prepare(
         model, optimizer, train_dataloader, test_dataloader, lr_scheduler
     )
+    # Recalculate after prepare() - now len(train_dataloader) is already divided by num_processes
+    # This should match the calculation above, but we recalculate for consistency
     num_update_steps_per_epoch = math.ceil(len(train_dataloader) / config.training.gradient_accumulation_steps)
     max_train_steps = config.training.n_epochs * num_update_steps_per_epoch
 

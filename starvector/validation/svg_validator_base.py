@@ -32,13 +32,23 @@ class SVGValidator(ABC):
         self.report_to_wandb = config.run.report_to == 'wandb'
         date_time = datetime.now().strftime("%Y%m%d_%H%M%S")
 
+        # 统一使用 config.run.out_dir 作为评估结果的根目录，
+        # 即使是从 checkpoint 载入模型，也不要把结果强行写到 checkpoint 目录下面。
         if config.model.from_checkpoint:
             chkp_dir = self.get_checkpoint_dir(config.model.from_checkpoint)
             config.model.from_checkpoint = chkp_dir
             self.resume_from_checkpoint = chkp_dir
-            self.out_dir = chkp_dir + '/' + config.run.out_dir + '/' + config.model.generation_engine + '_' + config.dataset.dataset_name + '_' + date_time
+            # 评估结果目录示例：
+            #   <project_root>/<config.run.out_dir>/StarVectorHFSVGValidator_/dataset_时间戳
+            self.out_dir = os.path.join(
+                config.run.out_dir,
+                f"{config.model.generation_engine}_{config.dataset.dataset_name}_{date_time}",
+            )
         else:
-            self.out_dir = config.run.out_dir + '/' + config.model.generation_engine + '_' + config.model.name + '_' + config.dataset.dataset_name + '_' + date_time
+            self.out_dir = os.path.join(
+                config.run.out_dir,
+                f"{config.model.generation_engine}_{config.model.name}_{config.dataset.dataset_name}_{date_time}",
+            )
         os.makedirs(self.out_dir, exist_ok=True)
         self.model_name = config.model.name
         # Save config to yaml file
@@ -219,6 +229,8 @@ class SVGValidator(ABC):
         out_path = self.out_dir
         for i, sample in enumerate(batch['Svg']):
             sample_id = str(batch['Filename'][i]).split('.')[0]
+            if '/' in sample_id:
+                sample_id=sample_id.rsplit('/', 1)[-1]
             res = results[i]
             res['sample_id'] = sample_id
             res['gt_svg'] = sample

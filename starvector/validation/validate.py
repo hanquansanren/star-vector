@@ -2,7 +2,7 @@
 
 from omegaconf import OmegaConf
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "6"
+os.environ["CUDA_VISIBLE_DEVICES"] = "6,7"
 from huggingface_hub import login
 from starvector.validation.svg_validator_base import validator_registry
 

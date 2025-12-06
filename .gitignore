@@ -184,7 +184,7 @@ assets/reward_assets
 *.whl
 starvector/models--starvector--starvector-1b-im2svg
 assets/test
-outputs/
+outputs
 assets/*
 .cursor
 .vscode
